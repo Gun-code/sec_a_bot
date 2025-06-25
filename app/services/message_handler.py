@@ -1,4 +1,5 @@
 import httpx
+from typing import Dict, Any, Optional
 from fastapi import HTTPException, Request
 from datetime import datetime, timezone
 
@@ -6,7 +7,7 @@ from app.core.config import settings
 from app.utils.logger import logger
 
 
-async def handle_discord_message(request: Request, payload: dict):
+async def handle_discord_message(request: Request, payload: dict) -> Dict[str, Any]:
     """FastAPI 웹훅용 메시지 핸들러"""
     content = payload.get("content", "")
     author = payload.get("author", {}).get("username", "unknown")
@@ -18,7 +19,7 @@ async def handle_discord_message(request: Request, payload: dict):
                 status_code=500, detail="Server start time not available."
             )
 
-        start_time = request.app.state.start_time
+        start_time: datetime = request.app.state.start_time
         uptime_delta = datetime.now(timezone.utc) - start_time
 
         total_seconds = int(uptime_delta.total_seconds())
@@ -58,7 +59,7 @@ async def handle_discord_message_for_bot(payload: dict):
     return await _forward_to_backend(payload)
 
 
-async def _forward_to_backend(payload: dict):
+async def _forward_to_backend(payload: dict) -> Optional[Dict[str, Any]]:
     """백엔드로 메시지 전달하는 공통 함수"""
     if not settings.backend_url:
         logger.error("BACKEND_URL is not set. Cannot forward message.")
