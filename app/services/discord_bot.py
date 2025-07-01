@@ -174,7 +174,7 @@ class DiscordBot:
             user_id = message.author.id
 
             # 1단계 : 이메일 요청
-            await message.channel.send("이메일을 입력해주세요.")
+            await message.channel.send("구글 이메일을 입력해주세요.")
 
             def check(m):
                 return m.author.id == user_id and m.channel.id == message.channel.id
@@ -184,9 +184,9 @@ class DiscordBot:
                 msg = await self.bot.wait_for("message", check=check, timeout=30)
                 email = msg.content.strip()
                 if not email:
-                    return "이메일을 입력해주세요."
-                if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-                    return "올바른 이메일 형식이 아닙니다."
+                    return "구글 이메일을 입력해주세요."
+                if not re.match(r"[^@]+@gmail\.com", email):
+                    return "올바른 구글 이메일 형식이 아닙니다."
                 
                 # 3단계 : 이메일 요청 처리
                 post_url = f"{settings.backend_url}/api/v1/auth/login"
@@ -199,10 +199,11 @@ class DiscordBot:
                 }
                 post_response = requests.post(post_url, headers=post_headers, json=post_data)
                 response = post_response.json()
-                if response.get("message") == "로그인 성공":
-                    return "로그인 성공"
-                elif response.get("message") == "로그인 실패":
-                    return "로그인 실패"
+                if response.get("message") == "유효한 토큰":
+                    return "토큰이 유효한 계정입니다."
+                elif response.get("message") == "유효하지 않은 토큰":
+                    url = response.get("url")
+                    return f"토큰이 유효하지 않습니다. 구글 로그인 페이지로 이동합니다. {url}"
                 else:
                     return "로그인 처리 중 오류가 발생했습니다."
             except asyncio.TimeoutError:
