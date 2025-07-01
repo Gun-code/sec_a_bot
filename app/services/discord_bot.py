@@ -3,15 +3,11 @@ from discord.ext import commands
 from datetime import datetime, timezone
 import requests
 import asyncio
-import os
-from dotenv import load_dotenv
+import re
 
 from app.core.config import settings
 from app.utils.logger import logger
 from app.services.message_handler import handle_discord_message_for_bot
-
-# .env 파일 로드
-load_dotenv()
 
 # 봇 구현 코드
 # 메시지 처리 로직
@@ -165,6 +161,7 @@ class DiscordBot:
     # }
     # 백엔드 로그인 요청 바디 : {
     #     "user_id": user_id,
+    #     "email": email
     # }
     # 백엔드 로그인 요청 반환 값 : {
     #     "message" : "로그인 성공" or "로그인 실패",
@@ -175,7 +172,44 @@ class DiscordBot:
         try:            
             # 사용자 id 가져오기
             user_id = message.author.id
-            post_url = f"{os.getenv('BACKEND_URL')}/api/v1/auth/login"
+
+            # 1단계 : 이메일 요청
+            await message.channel.send("이메일을 입력해주세요.")
+
+            def check(m):
+                return m.author.id == user_id and m.channel.id == message.channel.id
+            
+            # 2단계 : 이메일 요청 대기
+            try:
+                msg = await self.bot.wait_for("message", check=check, timeout=30)
+                email = msg.content.strip()
+                if not email:
+                    return "이메일을 입력해주세요."
+                if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                    return "올바른 이메일 형식이 아닙니다."
+                
+                # 3단계 : 이메일 요청 처리
+                post_url = f"{settings.backend_url}/api/v1/auth/login"
+                post_data = {
+                    "user_id": str(user_id),
+                    "user_email": str(email)
+                }
+                post_headers = {
+                    "Content-Type": "application/json"
+                }
+                post_response = requests.post(post_url, headers=post_headers, json=post_data)
+                response = post_response.json()
+                if response.get("message") == "로그인 성공":
+                    return "로그인 성공"
+                elif response.get("message") == "로그인 실패":
+                    return "로그인 실패"
+                else:
+                    return "로그인 처리 중 오류가 발생했습니다."
+            except asyncio.TimeoutError:
+                return "응답 시간이 초과되었습니다. 다시 '!로그인' 명령어를 입력해주세요."
+
+
+            post_url = f"{settings.backend_url}/api/v1/auth/login"
             post_data = {
                 "user_id": user_id
             }
