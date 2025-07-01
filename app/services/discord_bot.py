@@ -202,7 +202,7 @@ class DiscordBot:
                 if response.get("message") == "유효한 토큰":
                     return "토큰이 유효한 계정입니다."
                 elif response.get("message") == "유효하지 않은 토큰":
-                    url = response.get("url")
+                    url = response.get("login_url")
                     return f"토큰이 유효하지 않습니다. 구글 로그인 페이지로 이동합니다. {url}"
                 else:
                     return "로그인 처리 중 오류가 발생했습니다."
