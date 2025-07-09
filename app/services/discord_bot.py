@@ -202,8 +202,22 @@ class DiscordBot:
                 if response.get("message") == "유효한 토큰":
                     return "토큰이 유효한 계정입니다."
                 elif response.get("message") == "유효하지 않은 토큰":
-                    url = response.get("login_url")
-                    return f"토큰이 유효하지 않습니다. 구글 로그인 페이지로 이동합니다. {url}"
+                    if response.get("refresh_token"):
+                        refresh_url = f"{settings.backend_url}/api/v1/auth/token/refresh"
+                        refresh_data = {
+                            "refresh_token": response.get("refresh_token")
+                        }
+                        refresh_headers = {
+                            "Content-Type": "application/json"
+                        }
+                        refresh_response = requests.post(refresh_url, headers=refresh_headers, json=refresh_data)
+                        refresh_response = refresh_response.json()
+                        if refresh_response.get("message") == "토큰 갱신 성공":
+                            return "토큰이 갱신되었습니다. 다시 '!로그인' 명령어를 입력해주세요."
+                    else:
+                        url = response.get("login_url")
+                        return f"토큰이 유효하지 않습니다. 구글 로그인 페이지로 이동합니다. {url}"
+                    
                 else:
                     return "로그인 처리 중 오류가 발생했습니다."
             except asyncio.TimeoutError:
